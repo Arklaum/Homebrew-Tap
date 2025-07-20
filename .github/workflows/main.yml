@@ -1,11 +1,9 @@
-# .github/workflows/update-cask.yml
+# .github/workflows/main.yml
 name: Update YouTube-Music Cask
 
 on:
-  # Run once every day at 3:15 AM UTC
   schedule:
     - cron: '15 3 * * *'
-  # Allows you to run this workflow manually from the Actions tab
   workflow_dispatch:
 
 jobs:
@@ -22,25 +20,27 @@ jobs:
       - name: Get Latest Version Info
         id: livecheck
         run: |
-          # This is the key command. It tells brew to check the local file
-          # './youtube-music.rb' instead of searching for a cask by name.
-          JSON_OUTPUT=$(brew livecheck --cask --json ./youtube-music.rb)
+          # Correct path to the cask file inside the 'Casks' directory.
+          JSON_OUTPUT=$(brew livecheck --cask --json ./Casks/youtube-music.rb)
           echo "LIVECHECK_JSON=$JSON_OUTPUT" >> $GITHUB_ENV
 
       - name: Update Cask File
         id: update_cask
         run: |
+          CASK_FILE="Casks/youtube-music.rb"
+
           LATEST_VERSION=$(echo "${{ env.LIVECHECK_JSON }}" | jq -r '.[] | select(.cask == "youtube-music") | .version.latest')
           ARM_SHA=$(echo "${{ env.LIVECHECK_JSON }}" | jq -r '.[] | select(.cask == "youtube-music") | .version.arm_sha256')
-          CURRENT_VERSION=$(grep 'version "' youtube-music.rb | cut -d '"' -f 2)
+          CURRENT_VERSION=$(grep 'version "' "$CASK_FILE" | cut -d '"' -f 2)
 
           if [ "$LATEST_VERSION" = "$CURRENT_VERSION" ]; then
             echo "Cask is already up-to-date. Version: $CURRENT_VERSION"
             echo "UPDATED=false" >> $GITHUB_ENV
           else
             echo "New version available: $LATEST_VERSION. Updating cask..."
-            sed -i '' "s/version \"${CURRENT_VERSION}\"/version \"${LATEST_VERSION}\"/" youtube-music.rb
-            sed -i '' "s/sha256 \"[a-f0-9]*\"/sha256 \"${ARM_SHA}\"/" youtube-music.rb
+            # Update the correct file path with sed
+            sed -i '' "s/version \"${CURRENT_VERSION}\"/version \"${LATEST_VERSION}\"/" "$CASK_FILE"
+            sed -i '' "s/sha256 \"[a-f0-9]*\"/sha256 \"${ARM_SHA}\"/" "$CASK_FILE"
             echo "UPDATED=true" >> $GITHUB_ENV
             echo "NEW_VERSION=${LATEST_VERSION}" >> $GITHUB_ENV
           fi
@@ -50,6 +50,7 @@ jobs:
         run: |
           git config --global user.name 'github-actions[bot]'
           git config --global user.email 'github-actions[bot]@users.noreply.github.com'
-          git add youtube-music.rb
+          # Add the correct file path to git
+          git add Casks/youtube-music.rb
           git commit -m "Update youtube-music cask to ${{ env.NEW_VERSION }}"
           git push
