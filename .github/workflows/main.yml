@@ -20,9 +20,8 @@ jobs:
       - name: Get Latest Version Info
         id: livecheck
         run: |
-          # We no longer need 'brew tap'.
-          # Instead, we point livecheck directly to the cask file in the repository.
-          JSON_OUTPUT=$(brew livecheck --cask --json --arm ./youtube-music.rb)
+          # The --arm flag is not needed; the cask's `arch` block handles this.
+          JSON_OUTPUT=$(brew livecheck --cask --json ./youtube-music.rb)
           echo "LIVECHECK_JSON=$JSON_OUTPUT" >> $GITHUB_ENV
 
       - name: Update Cask File
