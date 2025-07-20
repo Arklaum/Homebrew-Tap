@@ -2,8 +2,10 @@
 name: Update YouTube-Music Cask
 
 on:
+  # Run once every day at 3:15 AM UTC
   schedule:
     - cron: '15 3 * * *'
+  # Allows you to run this workflow manually from the Actions tab
   workflow_dispatch:
 
 jobs:
@@ -20,7 +22,8 @@ jobs:
       - name: Get Latest Version Info
         id: livecheck
         run: |
-          # The --arm flag is not needed; the cask's `arch` block handles this.
+          # This is the key command. It tells brew to check the local file
+          # './youtube-music.rb' instead of searching for a cask by name.
           JSON_OUTPUT=$(brew livecheck --cask --json ./youtube-music.rb)
           echo "LIVECHECK_JSON=$JSON_OUTPUT" >> $GITHUB_ENV
 
@@ -45,8 +48,6 @@ jobs:
       - name: Commit and Push Changes
         if: env.UPDATED == 'true'
         run: |
-          # This config is required to author the commit.
-          # It uses a bot account and will NOT send you emails.
           git config --global user.name 'github-actions[bot]'
           git config --global user.email 'github-actions[bot]@users.noreply.github.com'
           git add youtube-music.rb
