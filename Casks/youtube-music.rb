@@ -2,7 +2,7 @@
 cask "youtube-music" do
   arch arm: "-arm64"
 
-  version "3.10.0"
+  version "3.9.0"
   sha256 "ee30ccf7be62be04e17d94d54f0eedcfc74ee4048cde15fd9c9540ece1cecaf2"
 
   url "https://github.com/th-ch/youtube-music/releases/download/v#{version}/YouTube-Music-#{version}#{arch}.dmg"
