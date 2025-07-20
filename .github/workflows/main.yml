@@ -2,10 +2,8 @@
 name: Update YouTube-Music Cask
 
 on:
-  # Run once every day at 3:15 AM UTC
   schedule:
     - cron: '15 3 * * *'
-  # Allows you to run this workflow manually from the Actions tab
   workflow_dispatch:
 
 jobs:
@@ -17,38 +15,31 @@ jobs:
         uses: actions/checkout@v4
 
       - name: Set up Homebrew
-        id: set-up-homebrew
         uses: Homebrew/actions/setup-homebrew@master
 
       - name: Get Latest Version Info
         id: livecheck
         run: |
-          # Point Homebrew to this local tap
-          brew tap --force-auto-update "$GITHUB_REPOSITORY" file://.
-
-          # Run livecheck and capture the JSON output
-          JSON_OUTPUT=$(brew livecheck --cask --json youtube-music)
+          # The --force-auto-update flag is removed as it's no longer needed or valid.
+          brew tap --force "$GITHUB_REPOSITORY" file://.
+          
+          JSON_OUTPUT=$(brew livecheck --cask --json --arm youtube-music)
           echo "LIVECHECK_JSON=$JSON_OUTPUT" >> $GITHUB_ENV
 
       - name: Update Cask File
         id: update_cask
         run: |
-          # Extract new version and SHAs from the JSON output
           LATEST_VERSION=$(echo "${{ env.LIVECHECK_JSON }}" | jq -r '.[] | select(.cask == "youtube-music") | .version.latest')
           ARM_SHA=$(echo "${{ env.LIVECHECK_JSON }}" | jq -r '.[] | select(.cask == "youtube-music") | .version.arm_sha256')
-          INTEL_SHA=$(echo "${{ env.LIVECHECK_JSON }}" | jq -r '.[] | select(.cask == "youtube-music") | .version.intel_sha256')
           CURRENT_VERSION=$(grep 'version "' youtube-music.rb | cut -d '"' -f 2)
 
-          # Check if the version has changed
           if [ "$LATEST_VERSION" = "$CURRENT_VERSION" ]; then
             echo "Cask is already up-to-date. Version: $CURRENT_VERSION"
             echo "UPDATED=false" >> $GITHUB_ENV
           else
             echo "New version available: $LATEST_VERSION. Updating cask..."
-            # Use sed to replace the version and sha256 lines
             sed -i '' "s/version \"${CURRENT_VERSION}\"/version \"${LATEST_VERSION}\"/" youtube-music.rb
-            sed -i '' "s/sha256 arm:   \"[a-f0-9]*\"/sha256 arm:   \"${ARM_SHA}\"/" youtube-music.rb
-            sed -i '' "s/intel:  \"[a-f0-9]*\"/intel:  \"${INTEL_SHA}\"/" youtube-music.rb
+            sed -i '' "s/sha256 \"[a-f0-9]*\"/sha256 \"${ARM_SHA}\"/" youtube-music.rb
             echo "UPDATED=true" >> $GITHUB_ENV
             echo "NEW_VERSION=${LATEST_VERSION}" >> $GITHUB_ENV
           fi
@@ -56,6 +47,8 @@ jobs:
       - name: Commit and Push Changes
         if: env.UPDATED == 'true'
         run: |
+          # This config is required to author the commit.
+          # It uses a bot account and will NOT send you emails.
           git config --global user.name 'github-actions[bot]'
           git config --global user.email 'github-actions[bot]@users.noreply.github.com'
           git add youtube-music.rb
