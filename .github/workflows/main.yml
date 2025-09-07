@@ -2,8 +2,8 @@ name: Update YouTube-Music Cask
 
 on:
   schedule:
-    # Run once every Sunday at 3:15 AM UTC
-    - cron: '15 3 * * 0'
+    # Run once every day at 3:15 AM UTC
+    - cron: '15 3 * * *'
   workflow_dispatch:
 
 jobs:
